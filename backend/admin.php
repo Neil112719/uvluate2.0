@@ -1,9 +1,6 @@
 <?php
 session_start();
-header("Access-Control-Allow-Origin: http://localhost:3000"); // Ensure correct frontend origin
-header("Access-Control-Allow-Credentials: true");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
-header("Content-Type: application/json");
+include 'cors.php';
 
 // Check if user is logged in and is an admin
 if (!isset($_SESSION['user_id']) || $_SESSION['usertype'] != 1) {

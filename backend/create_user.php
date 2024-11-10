@@ -1,31 +1,32 @@
 <?php
 session_start();
-header("Access-Control-Allow-Origin: http://localhost:3000"); // Ensure correct frontend origin
-header("Access-Control-Allow-Credentials: true");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
-header("Content-Type: application/json");
+include 'cors.php';
 require 'database_connection.php';
 
 $data = json_decode(file_get_contents("php://input"));
 
+// Ensure the user is authenticated and is an admin (usertype 1)
 if (!isset($_SESSION['user_id']) || $_SESSION['usertype'] != 1) {
     echo json_encode(['status' => 'error', 'message' => 'Unauthorized']);
     exit;
 }
 
+// Extract user details from the request
 $id_number = $data->id_number;
-$password = password_hash($data->password, PASSWORD_BCRYPT);
+$password = password_hash($data->password, PASSWORD_BCRYPT); // Hash the password
 $fname = $data->fname;
-$middlename = $data->middlename;
+$middlename = $data->middlename ?? null;
 $lname = $data->lname;
-$suffix = $data->suffix;
+$suffix = $data->suffix ?? null;
 $email = $data->email;
 $usertype = $data->usertype;
-$department = $data->department;
-$section = $data->section;
+$department = $data->department ?? null;
+$course = $data->course ?? null;
+$section = $data->section ?? null;
+$year = $data->year ?? null;
 
 try {
-    $insertQuery = $pdo->prepare("INSERT INTO users (id_number, password, fname, middlename, lname, suffix, email, usertype, department, section) VALUES (:id_number, :password, :fname, :middlename, :lname, :suffix, :email, :usertype, :department, :section)");
+    $insertQuery = $pdo->prepare("INSERT INTO users (id_number, password, fname, middlename, lname, suffix, email, usertype, department, course, section, year) VALUES (:id_number, :password, :fname, :middlename, :lname, :suffix, :email, :usertype, :department, :course, :section, :year)");
     $insertQuery->execute([
         'id_number' => $id_number,
         'password' => $password,
@@ -36,7 +37,9 @@ try {
         'email' => $email,
         'usertype' => $usertype,
         'department' => $department,
-        'section' => $section
+        'course' => $course,
+        'section' => $section,
+        'year' => $year
     ]);
     echo json_encode(['status' => 'success', 'message' => 'User created successfully']);
 } catch (Exception $e) {

@@ -1,8 +1,5 @@
 <?php
-header("Access-Control-Allow-Origin: http://your-frontend-url");
-header("Access-Control-Allow-Credentials: true");
-header("Content-Type: application/json");
-
+include 'cors.php';
 include 'database_connection.php';
 
 // Check if the table is empty
