@@ -8,7 +8,6 @@ const LoginPage = () => {
     const [otp, setOtp] = useState('');
     const [showOtpOverlay, setShowOtpOverlay] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
-    const [userType, setUserType] = useState(null); // Track user type for redirection
     const navigate = useNavigate();
 
     const handleLogin = async (e) => {
@@ -20,14 +19,21 @@ const LoginPage = () => {
                 { headers: { 'Content-Type': 'application/json' }, withCredentials: true }
             );
 
-            if (response.data.status === 'otp_required') {
-                setUserType(response.data.usertype); // Save user type for later redirection
-                setShowOtpOverlay(true); // Show OTP overlay
-            } else {
+            console.log('Login response:', response.data); // Debug: log the response
+
+            // Immediately handle OTP-required response
+            if (response.data?.status === 'otp_required') {
+                setShowOtpOverlay(true);
+                setErrorMessage(''); // Clear any previous error messages
+                console.log('OTP required, overlay set to true'); // Debug confirmation
+            } else if (response.data?.status === 'error') {
                 setErrorMessage(response.data.message);
+                setShowOtpOverlay(false); // Keep the login form visible on error
+                console.log('Error during login:', response.data.message); // Debug message
             }
         } catch (error) {
             setErrorMessage("An error occurred during login.");
+            console.log('Error during login attempt:', error); // Debugging message
         }
     };
 
@@ -40,13 +46,16 @@ const LoginPage = () => {
                 { headers: { 'Content-Type': 'application/json' }, withCredentials: true }
             );
 
-            if (response.data.status === 'success') {
-                // Save authentication status and user type
+            console.log('OTP verification response:', response.data); // Debug: log OTP response
+
+            if (response.data?.status === 'success') {
+                const verifiedUserType = response.data.usertype;
+
                 localStorage.setItem('isAuthenticated', true);
-                localStorage.setItem('userType', userType);
+                localStorage.setItem('userType', verifiedUserType);
 
                 // Redirect based on user type
-                switch (userType) {
+                switch (verifiedUserType) {
                     case 1:
                         navigate('/admin');
                         break;
@@ -67,30 +76,34 @@ const LoginPage = () => {
             }
         } catch (error) {
             setErrorMessage("An error occurred during OTP verification.");
+            console.log('Error during OTP verification:', error); // Debugging message
         }
     };
 
     return (
         <div className="login-page">
-            <form onSubmit={handleLogin}>
-                <h2>Login</h2>
-                <input
-                    type="text"
-                    placeholder="ID Number"
-                    value={idNumber}
-                    onChange={(e) => setIdNumber(e.target.value)}
-                    required
-                />
-                <input
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                />
-                <button type="submit">Login</button>
-                {errorMessage && <p className="error">{errorMessage}</p>}
-            </form>
+            {/* Login Form */}
+            {!showOtpOverlay && (
+                <form onSubmit={handleLogin}>
+                    <h2>Login</h2>
+                    <input
+                        type="text"
+                        placeholder="ID Number"
+                        value={idNumber}
+                        onChange={(e) => setIdNumber(e.target.value)}
+                        required
+                    />
+                    <input
+                        type="password"
+                        placeholder="Password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                    />
+                    <button type="submit">Login</button>
+                    {errorMessage && <p className="error">{errorMessage}</p>}
+                </form>
+            )}
 
             {/* OTP Overlay */}
             {showOtpOverlay && (
@@ -105,6 +118,7 @@ const LoginPage = () => {
                             required
                         />
                         <button type="submit">Verify OTP</button>
+                        {errorMessage && <p className="error">{errorMessage}</p>}
                     </form>
                 </div>
             )}

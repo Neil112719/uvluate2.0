@@ -26,21 +26,27 @@ function createTable($pdo, $tableName, $createSQL) {
 // Define the SQL statements to create tables
 $tables = [
     'users' => "
-        CREATE TABLE users (
-            id_number INT(10) NOT NULL,
-            password VARCHAR(255) NOT NULL COLLATE 'utf8mb4_0900_ai_ci',
-            fname TEXT NOT NULL COLLATE 'utf8mb4_0900_ai_ci',
-            middlename TEXT COLLATE 'utf8mb4_0900_ai_ci',
-            lname TEXT NOT NULL COLLATE 'utf8mb4_0900_ai_ci',
-            suffix TEXT COLLATE 'utf8mb4_0900_ai_ci',
-            email VARCHAR(50) NOT NULL COLLATE 'utf8mb4_0900_ai_ci',
-            usertype INT(10) NOT NULL,
-            department VARCHAR(50) COLLATE 'utf8mb4_0900_ai_ci',
-            section TEXT COLLATE 'utf8mb4_0900_ai_ci',
-            otp INT(10),
-            timestamp DATETIME,
-            UNIQUE INDEX id_number (id_number) USING BTREE
-        ) COLLATE='utf8mb4_0900_ai_ci' ENGINE=InnoDB;
+        CREATE TABLE `users` (
+	`id_number` INT(10) NOT NULL DEFAULT '0',
+	`password` VARCHAR(255) NOT NULL COLLATE 'utf8mb4_0900_ai_ci',
+	`fname` TEXT NOT NULL COLLATE 'utf8mb4_0900_ai_ci',
+	`middlename` TEXT NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci',
+	`lname` TEXT NOT NULL COLLATE 'utf8mb4_0900_ai_ci',
+	`suffix` TEXT NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci',
+	`email` VARCHAR(50) NOT NULL COLLATE 'utf8mb4_0900_ai_ci',
+	`usertype` INT(10) NOT NULL,
+	`department` VARCHAR(50) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci',
+	`course` VARCHAR(50) NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci',
+	`section` TEXT NULL DEFAULT NULL COLLATE 'utf8mb4_0900_ai_ci',
+	`year` INT(10) NULL DEFAULT NULL,
+	`otp` INT(10) NULL DEFAULT NULL,
+	`timestamp` TIMESTAMP NULL DEFAULT NULL,
+	PRIMARY KEY (`id_number`) USING BTREE,
+	UNIQUE INDEX `id_number` (`id_number`) USING BTREE
+)
+COLLATE='utf8mb4_0900_ai_ci'
+ENGINE=InnoDB
+;
     ",
     /* Add other tables as needed, for example:
     'another_table' => "

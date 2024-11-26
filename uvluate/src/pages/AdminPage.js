@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import axios from 'axios';
 
 const AdminPage = () => {
-    const [showUsers, setShowUsers] = useState(false); // Controls whether to display the user list
-    const [showCreateUserForm, setShowCreateUserForm] = useState(false); // Controls whether to display the create user form
+    const [showUsers, setShowUsers] = useState(false);
+    const [showCreateUserForm, setShowCreateUserForm] = useState(false);
     const [users, setUsers] = useState([]);
-    const [newUser, setNewUser] = useState({
+    const [userData, setUserData] = useState({
         id_number: '',
         password: '',
         fname: '',
@@ -17,17 +17,20 @@ const AdminPage = () => {
         department: '',
         course: '',
         section: '',
-        year: ''
+        year: '',
+        otp: '',
+        timestamp: ''
     });
+    const [editingUser, setEditingUser] = useState(null); // Track user being edited
     const [message, setMessage] = useState('');
 
-    // Function to fetch users
+    // Fetch users from the backend
     const fetchUsers = async () => {
         try {
             const response = await axios.get('http://localhost:8000/get_users.php', { withCredentials: true });
             if (response.data.status === 'success') {
                 setUsers(response.data.users);
-                setMessage(''); // Clear any previous messages
+                setMessage('');
             } else {
                 setMessage(response.data.message);
             }
@@ -36,23 +39,21 @@ const AdminPage = () => {
         }
     };
 
-    // Toggle showing the users list
+    // Toggle user list visibility
     const handleShowUsers = () => {
-        if (!showUsers) {
-            fetchUsers();
-        }
+        if (!showUsers) fetchUsers();
         setShowUsers(!showUsers);
     };
 
-    // Toggle showing the create user form
+    // Toggle create user form visibility
     const handleShowCreateUserForm = () => {
         setShowCreateUserForm(!showCreateUserForm);
     };
 
-    // Handle input changes in the create user form
+    // Handle input changes in the form
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setNewUser({ ...newUser, [name]: value });
+        setUserData({ ...userData, [name]: value });
     };
 
     // Handle user creation
@@ -61,18 +62,75 @@ const AdminPage = () => {
         try {
             const response = await axios.post(
                 'http://localhost:8000/create_user.php',
-                newUser,
+                userData,
                 { headers: { 'Content-Type': 'application/json' }, withCredentials: true }
             );
+            setMessage(response.data.message);
             if (response.data.status === 'success') {
-                setMessage(response.data.message);
-                setShowCreateUserForm(false); // Hide the form after successful creation
-                fetchUsers(); // Refresh the list of users after creation
-            } else {
-                setMessage(response.data.message);
+                setShowCreateUserForm(false);
+                fetchUsers(); // Refresh user list after creation
+                setUserData({
+                    id_number: '',
+                    password: '',
+                    fname: '',
+                    middlename: '',
+                    lname: '',
+                    suffix: '',
+                    email: '',
+                    usertype: '4',
+                    department: '',
+                    course: '',
+                    section: '',
+                    year: '',
+                    otp: '',
+                    timestamp: ''
+                });
             }
         } catch (error) {
             setMessage('An error occurred while creating the user.');
+        }
+    };
+
+    // Set user data for editing
+    const handleEditUser = (user) => {
+        setEditingUser(user);
+        setUserData(user);
+        setShowCreateUserForm(true); // Open form for editing
+    };
+
+    // Handle user update
+    const handleUpdateUser = async (e) => {
+        e.preventDefault();
+        try {
+            const response = await axios.post(
+                'http://localhost:8000/update_user.php',
+                userData,
+                { headers: { 'Content-Type': 'application/json' }, withCredentials: true }
+            );
+            setMessage(response.data.message);
+            if (response.data.status === 'success') {
+                setEditingUser(null);
+                fetchUsers();
+                setShowCreateUserForm(false);
+            }
+        } catch (error) {
+            setMessage('An error occurred while updating the user.');
+        }
+    };
+
+    // Handle user deletion
+    const handleDeleteUser = async (id_number) => {
+        if (!window.confirm('Are you sure you want to delete this user?')) return;
+        try {
+            const response = await axios.post(
+                'http://localhost:8000/delete_user.php',
+                { id_number },
+                { headers: { 'Content-Type': 'application/json' }, withCredentials: true }
+            );
+            setMessage(response.data.message);
+            if (response.data.status === 'success') fetchUsers();
+        } catch (error) {
+            setMessage('An error occurred while deleting the user.');
         }
     };
 
@@ -84,22 +142,17 @@ const AdminPage = () => {
 
             {message && <p>{message}</p>}
 
-            {/* Conditionally render user table */}
+            {/* User List with Edit/Delete Options */}
             {showUsers && users.length > 0 && (
                 <table>
                     <thead>
                         <tr>
                             <th>ID Number</th>
                             <th>First Name</th>
-                            <th>Middle Name</th>
                             <th>Last Name</th>
-                            <th>Suffix</th>
                             <th>Email</th>
                             <th>User Type</th>
-                            <th>Department</th>
-                            <th>Course</th>
-                            <th>Section</th>
-                            <th>Year</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -107,33 +160,30 @@ const AdminPage = () => {
                             <tr key={user.id_number}>
                                 <td>{user.id_number}</td>
                                 <td>{user.fname}</td>
-                                <td>{user.middlename}</td>
                                 <td>{user.lname}</td>
-                                <td>{user.suffix}</td>
                                 <td>{user.email}</td>
                                 <td>{user.usertype}</td>
-                                <td>{user.department}</td>
-                                <td>{user.course}</td>
-                                <td>{user.section}</td>
-                                <td>{user.year}</td>
+                                <td>
+                                    <button onClick={() => handleEditUser(user)}>Edit</button>
+                                    <button onClick={() => handleDeleteUser(user.id_number)}>Delete</button>
+                                </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
             )}
 
-            {/* Message for when no users are found */}
             {showUsers && users.length === 0 && <p>No users found.</p>}
 
-            {/* Conditionally render create user form */}
-            {showCreateUserForm && (
-                <form onSubmit={handleCreateUser} className="create-user-form">
-                    <h2>Create New User</h2>
+            {/* Create or Edit User Form */}
+            {(showCreateUserForm || editingUser) && (
+                <form onSubmit={editingUser ? handleUpdateUser : handleCreateUser}>
+                    <h2>{editingUser ? 'Edit User' : 'Create New User'}</h2>
                     <input
                         type="text"
                         name="id_number"
                         placeholder="ID Number"
-                        value={newUser.id_number}
+                        value={userData.id_number}
                         onChange={handleInputChange}
                         required
                     />
@@ -141,15 +191,15 @@ const AdminPage = () => {
                         type="password"
                         name="password"
                         placeholder="Password"
-                        value={newUser.password}
+                        value={userData.password}
                         onChange={handleInputChange}
-                        required
+                        required={!editingUser} // Only require password for new users
                     />
                     <input
                         type="text"
                         name="fname"
                         placeholder="First Name"
-                        value={newUser.fname}
+                        value={userData.fname}
                         onChange={handleInputChange}
                         required
                     />
@@ -157,14 +207,14 @@ const AdminPage = () => {
                         type="text"
                         name="middlename"
                         placeholder="Middle Name"
-                        value={newUser.middlename}
+                        value={userData.middlename}
                         onChange={handleInputChange}
                     />
                     <input
                         type="text"
                         name="lname"
                         placeholder="Last Name"
-                        value={newUser.lname}
+                        value={userData.lname}
                         onChange={handleInputChange}
                         required
                     />
@@ -172,20 +222,20 @@ const AdminPage = () => {
                         type="text"
                         name="suffix"
                         placeholder="Suffix"
-                        value={newUser.suffix}
+                        value={userData.suffix}
                         onChange={handleInputChange}
                     />
                     <input
                         type="email"
                         name="email"
                         placeholder="Email"
-                        value={newUser.email}
+                        value={userData.email}
                         onChange={handleInputChange}
                         required
                     />
                     <select
                         name="usertype"
-                        value={newUser.usertype}
+                        value={userData.usertype}
                         onChange={handleInputChange}
                         required
                     >
@@ -198,31 +248,31 @@ const AdminPage = () => {
                         type="text"
                         name="department"
                         placeholder="Department"
-                        value={newUser.department}
+                        value={userData.department}
                         onChange={handleInputChange}
                     />
                     <input
                         type="text"
                         name="course"
                         placeholder="Course"
-                        value={newUser.course}
+                        value={userData.course}
                         onChange={handleInputChange}
                     />
                     <input
                         type="text"
                         name="section"
                         placeholder="Section"
-                        value={newUser.section}
+                        value={userData.section}
                         onChange={handleInputChange}
                     />
                     <input
                         type="number"
                         name="year"
                         placeholder="Year"
-                        value={newUser.year}
+                        value={userData.year}
                         onChange={handleInputChange}
                     />
-                    <button type="submit">Create User</button>
+                    <button type="submit">{editingUser ? 'Update User' : 'Create User'}</button>
                 </form>
             )}
         </div>
